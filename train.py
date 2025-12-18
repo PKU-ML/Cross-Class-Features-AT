@@ -28,11 +28,6 @@ def get_args():
     parser.add_argument('--device', default=0, type=int)
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--save-interval', default=10, type=int)
-    parser.add_argument('--start', default=90, type=int)
-    parser.add_argument('--end', default=110, type=int)
-    parser.add_argument('--lam', default=0.8, type=float)
-    parser.add_argument('--T', default=1.5, type=float)
-    parser.add_argument('--decay', default=0.001, type=float)
     parser.add_argument('--no-rand-init', action='store_true')
     return parser.parse_args()
 
@@ -53,15 +48,6 @@ def lr_schedule(epoch, args):
             return args.lr * 0.01
     else:
         return args.lr
-
-def lam_schedule(epoch, args):
-    if epoch > args.end:
-        return args.lam
-    else:
-        return (epoch-args.start) / (args.end-args.start) * args.lam
-
-def decay_schedule(epoch, args):
-    return 1 - args.decay
 
 if __name__ == '__main__':
     args = get_args()
@@ -117,11 +103,7 @@ if __name__ == '__main__':
             if mode == 'AT':
                 delta = pgd.perturb(model, x, y)
                 output = model(normalize(x + delta))
-                if epoch >= args.start:
-                    lam = lam_schedule(epoch, args)
-                    loss = criterion(output, y)
-                else:
-                    loss = criterion(output, y)
+                loss = criterion(output, y)
             elif mode == 'none':
                 output = model(normalize(x))
                 loss = criterion(output, y)
@@ -138,7 +120,6 @@ if __name__ == '__main__':
             train_bar.set_description(
                 f'Epoch {epoch}: Train Clean {log_data[0]/log_data[2]*100:.2f} Robust {log_data[1]/log_data[2]*100:.2f}'
             )
-            decay = decay_schedule(epoch, args)
             model.eval()
             if args.debug:
                 break
